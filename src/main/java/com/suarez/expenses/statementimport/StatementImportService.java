@@ -135,6 +135,22 @@ public class StatementImportService {
         return StatementImportResponseDto.completed(summary);
     }
 
+    @Transactional
+    public ImportSummaryDto importNormalizedRows(
+            Long accountId,
+            String sourceName,
+            StatementFileType fileType,
+            List<NormalizedStatementRow> rows,
+            List<StatementIssue> issues
+    ) {
+        Account account = accountService.resolveAccount(accountId);
+        String normalizedSourceName = normalizeSourceName(sourceName);
+        StatementFileType resolvedFileType = fileType == null ? StatementFileType.CSV : fileType;
+        List<NormalizedStatementRow> safeRows = rows == null ? List.of() : rows;
+        List<StatementIssue> safeIssues = issues == null ? new ArrayList<>() : new ArrayList<>(issues);
+        return completeImport(account, normalizedSourceName, resolvedFileType, safeRows, safeIssues);
+    }
+
     private ImportSummaryDto completeImport(
             Account account,
             String fileName,
@@ -427,6 +443,13 @@ public class StatementImportService {
             throw new BadRequestException("File name is required");
         }
         return fileName.trim();
+    }
+
+    private String normalizeSourceName(String sourceName) {
+        if (sourceName == null || sourceName.isBlank()) {
+            return "Integration import";
+        }
+        return sourceName.trim();
     }
 
     private String normalizeDescription(String value) {

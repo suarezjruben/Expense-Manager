@@ -94,6 +94,10 @@ Month route parameters use the format `yyyy-MM` (example: `2026-02`).
 - `POST /api/accounts/{accountId}/statement-imports` (multipart `file` for `.csv`, `.ofx`, `.qfx`)
   - If CSV has no header row and no saved mapping exists for that account, response status is `HEADER_MAPPING_REQUIRED`.
   - Then resend with mapping fields: `dateColumnIndex`, `amountColumnIndex`, `descriptionColumnIndex`, optional `categoryColumnIndex`, optional `externalIdColumnIndex`, and `saveHeaderMapping=true` to persist per account.
+- `POST /api/accounts/{accountId}/plaid/link-token`
+- `POST /api/accounts/{accountId}/plaid/exchange`
+- `GET /api/accounts/{accountId}/plaid/connections`
+- `POST /api/accounts/{accountId}/plaid/connections/{connectionId}/sync`
 - `GET /api/months/{yearMonth}/settings`
 - `PUT /api/months/{yearMonth}/settings`
 - `GET /api/months/{yearMonth}/summary`
@@ -147,3 +151,18 @@ Frontend (from `ui/`):
 - CORS is configured to allow `http://localhost:4200` for `/api/**`.
 - JPA schema mode is `update` for local development.
 - `target/` and `ui/dist/` build outputs are generated artifacts.
+
+## Plaid Setup
+
+Plaid integration is disabled by default. Configure these properties in `src/main/resources/application.properties` or environment-specific overrides:
+
+- `plaid.enabled=true`
+- `plaid.base-url=https://sandbox.plaid.com` (or development/production)
+- `plaid.client-id=...`
+- `plaid.secret=...`
+- Optional: `plaid.country-codes=US`, `plaid.products=transactions`, `plaid.sync-page-size=100`
+- Usage warning controls:
+  - `plaid.usage.free-monthly-call-limit=200`
+  - `plaid.usage.warning-threshold-percent=80`
+
+`/plaid/connections/{connectionId}/sync` tracks monthly Plaid Transactions API calls and returns a usage payload with warning/exhausted flags when usage approaches or reaches the configured free-tier limit.
