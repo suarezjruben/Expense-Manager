@@ -60,6 +60,7 @@ export class TransactionsPageComponent implements OnInit {
   incomeCategoryByTransactionId: Record<number, number> = {};
   savingTransactionKeys = new Set<string>();
   savingTypes = new Set<TransactionType>();
+  deletingTypes = new Set<TransactionType>();
 
   expenseForm: NewTransactionForm = this.createDefaultForm();
   incomeForm: NewTransactionForm = this.createDefaultForm();
@@ -134,6 +135,9 @@ export class TransactionsPageComponent implements OnInit {
       this.error = 'Account is required';
       return;
     }
+    if (this.isDeletingType(type)) {
+      return;
+    }
 
     this.api.deleteTransaction(this.month, type, id, this.selectedAccountId).subscribe({
       next: () => this.load(),
@@ -167,9 +171,21 @@ export class TransactionsPageComponent implements OnInit {
     return this.savingTypes.has(type);
   }
 
+  isDeletingType(type: TransactionType): boolean {
+    return this.deletingTypes.has(type);
+  }
+
+  hasTransactions(type: TransactionType): boolean {
+    const source = type === 'EXPENSE' ? this.expenses : this.incomes;
+    return source.length > 0;
+  }
+
   saveTransactionCategory(type: TransactionType, transaction: TransactionDto): void {
     if (!this.selectedAccountId) {
       this.error = 'Account is required';
+      return;
+    }
+    if (this.isDeletingType(type)) {
       return;
     }
 
@@ -203,6 +219,9 @@ export class TransactionsPageComponent implements OnInit {
       this.error = 'Account is required';
       return;
     }
+    if (this.isDeletingType(type)) {
+      return;
+    }
     const accountId = this.selectedAccountId;
 
     const source = type === 'EXPENSE' ? this.expenses : this.incomes;
@@ -228,6 +247,43 @@ export class TransactionsPageComponent implements OnInit {
 
     forkJoin(updates)
       .pipe(finalize(() => this.savingTypes.delete(type)))
+      .subscribe({
+        next: () => this.load(),
+        error: (error) => (this.error = this.toMessage(error))
+      });
+  }
+
+  deleteAllTransactions(type: TransactionType): void {
+    if (!this.selectedAccountId) {
+      this.error = 'Account is required';
+      return;
+    }
+    if (this.isSavingType(type) || this.isDeletingType(type)) {
+      return;
+    }
+
+    const source = type === 'EXPENSE' ? this.expenses : this.incomes;
+    if (!source.length) {
+      return;
+    }
+
+    const typeLabel = type === 'EXPENSE' ? 'expense' : 'income';
+    const accountName = this.accounts.find((account) => account.id === this.selectedAccountId)?.name ?? 'selected account';
+    const countLabel = source.length === 1 ? 'transaction' : 'transactions';
+    const confirmed = window.confirm(
+      `Delete all ${source.length} ${typeLabel} ${countLabel} for ${this.month} in ${accountName}? This action cannot be undone.`
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    this.error = '';
+    const accountId = this.selectedAccountId;
+    this.deletingTypes.add(type);
+    const deletions = source.map((transaction) => this.api.deleteTransaction(this.month, type, transaction.id, accountId));
+
+    forkJoin(deletions)
+      .pipe(finalize(() => this.deletingTypes.delete(type)))
       .subscribe({
         next: () => this.load(),
         error: (error) => (this.error = this.toMessage(error))

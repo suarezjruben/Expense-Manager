@@ -40,8 +40,11 @@ public class CsvStatementParser implements StatementParser {
     private static final Set<String> CREDIT_HEADERS = Set.of(
             "credit", "deposit", "inflow", "money in"
     );
+    private static final Set<String> MEMO_HEADERS = Set.of(
+            "memo"
+    );
     private static final Set<String> DESCRIPTION_HEADERS = Set.of(
-            "description", "memo", "payee", "name", "details"
+            "description", "payee", "name", "details"
     );
     private static final Set<String> CATEGORY_HEADERS = Set.of(
             "category", "category name", "classification"
@@ -56,6 +59,7 @@ public class CsvStatementParser implements StatementParser {
         ALL_KNOWN_HEADERS.addAll(AMOUNT_HEADERS);
         ALL_KNOWN_HEADERS.addAll(DEBIT_HEADERS);
         ALL_KNOWN_HEADERS.addAll(CREDIT_HEADERS);
+        ALL_KNOWN_HEADERS.addAll(MEMO_HEADERS);
         ALL_KNOWN_HEADERS.addAll(DESCRIPTION_HEADERS);
         ALL_KNOWN_HEADERS.addAll(CATEGORY_HEADERS);
         ALL_KNOWN_HEADERS.addAll(EXTERNAL_ID_HEADERS);
@@ -109,6 +113,7 @@ public class CsvStatementParser implements StatementParser {
         Integer amountIndex = findColumnIndex(headerIndexByName, AMOUNT_HEADERS);
         Integer debitIndex = findColumnIndex(headerIndexByName, DEBIT_HEADERS);
         Integer creditIndex = findColumnIndex(headerIndexByName, CREDIT_HEADERS);
+        Integer memoIndex = findColumnIndex(headerIndexByName, MEMO_HEADERS);
         Integer descriptionIndex = findColumnIndex(headerIndexByName, DESCRIPTION_HEADERS);
         Integer categoryIndex = findColumnIndex(headerIndexByName, CATEGORY_HEADERS);
         Integer externalIdIndex = findColumnIndex(headerIndexByName, EXTERNAL_ID_HEADERS);
@@ -130,6 +135,7 @@ public class CsvStatementParser implements StatementParser {
                     amountIndex,
                     debitIndex,
                     creditIndex,
+                    memoIndex,
                     descriptionIndex,
                     categoryIndex,
                     externalIdIndex,
@@ -152,6 +158,7 @@ public class CsvStatementParser implements StatementParser {
                     mapping.amountColumnIndex(),
                     null,
                     null,
+                    null,
                     mapping.descriptionColumnIndex(),
                     mapping.categoryColumnIndex(),
                     mapping.externalIdColumnIndex(),
@@ -167,6 +174,7 @@ public class CsvStatementParser implements StatementParser {
             Integer amountIndex,
             Integer debitIndex,
             Integer creditIndex,
+            Integer memoIndex,
             Integer descriptionIndex,
             Integer categoryIndex,
             Integer externalIdIndex,
@@ -178,7 +186,8 @@ public class CsvStatementParser implements StatementParser {
         String amountRaw = get(record, amountIndex);
         String debitRaw = get(record, debitIndex);
         String creditRaw = get(record, creditIndex);
-        String descriptionRaw = get(record, descriptionIndex);
+        String memoRaw = normalize(get(record, memoIndex));
+        String descriptionRaw = normalize(get(record, descriptionIndex));
         String categoryRaw = get(record, categoryIndex);
         String externalIdRaw = get(record, externalIdIndex);
 
@@ -194,7 +203,7 @@ public class CsvStatementParser implements StatementParser {
             return;
         }
 
-        String description = normalize(descriptionRaw);
+        String description = memoRaw != null ? memoRaw : descriptionRaw;
         if (description == null) {
             description = "Imported transaction";
             issues.add(StatementIssue.warning(rowNumber, "Missing description. Defaulted to Imported transaction"));

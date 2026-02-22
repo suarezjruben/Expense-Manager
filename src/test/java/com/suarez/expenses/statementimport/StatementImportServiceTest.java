@@ -2,6 +2,7 @@ package com.suarez.expenses.statementimport;
 
 import com.suarez.expenses.account.Account;
 import com.suarez.expenses.account.AccountService;
+import com.suarez.expenses.transaction.BudgetTransaction;
 import com.suarez.expenses.transaction.BudgetTransactionRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -178,5 +179,44 @@ class StatementImportServiceTest {
         assertThat(secondResponse.summary()).isNotNull();
         assertThat(secondResponse.summary().inserted()).isEqualTo(0);
         assertThat(secondResponse.summary().skippedDuplicates()).isEqualTo(2);
+    }
+
+    @Test
+    void shouldPreferMemoOverDescriptionWhenMemoIsPresent() {
+        Account account = accountService.getOrCreateDefault();
+        String csv = """
+                Transaction Date,Post Date,Description,Category,Type,Amount,Memo
+                01/29/2026,01/30/2026,Description should be ignored,Shopping,Sale,-21.28,Memo wins
+                01/28/2026,01/29/2026,Fallback description,Bills & Utilities,Sale,-3.19,
+                """;
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "statement.csv",
+                "text/csv",
+                csv.getBytes(StandardCharsets.UTF_8)
+        );
+
+        StatementImportResponseDto response = statementImportService.importStatement(
+                account.getId(),
+                file,
+                null,
+                null,
+                null,
+                null,
+                null,
+                false
+        );
+
+        assertThat(response.status()).isEqualTo(StatementImportResponseStatus.COMPLETED);
+        assertThat(response.summary()).isNotNull();
+        assertThat(response.summary().inserted()).isEqualTo(2);
+
+        assertThat(budgetTransactionRepository.findByAccountIdAndTxnDateBetween(
+                account.getId(),
+                LocalDate.of(2026, 1, 1),
+                LocalDate.of(2026, 1, 31)
+        )).extracting(BudgetTransaction::getDescription)
+                .contains("Memo wins", "Fallback description")
+                .doesNotContain("Description should be ignored");
     }
 }

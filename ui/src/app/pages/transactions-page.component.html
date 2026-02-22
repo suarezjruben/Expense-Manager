@@ -153,11 +153,18 @@
               <button
                 type="button"
                 (click)="saveTransactionCategory('EXPENSE', txn)"
-                [disabled]="!hasCategoryChanged('EXPENSE', txn) || isSavingTransaction('EXPENSE', txn.id) || isSavingType('EXPENSE')"
+                [disabled]="!hasCategoryChanged('EXPENSE', txn) || isSavingTransaction('EXPENSE', txn.id) || isSavingType('EXPENSE') || isDeletingType('EXPENSE')"
               >
                 {{ isSavingTransaction('EXPENSE', txn.id) ? 'Saving...' : 'Save' }}
               </button>
-              <button type="button" class="danger" (click)="deleteTransaction('EXPENSE', txn.id)">Delete</button>
+              <button
+                type="button"
+                class="danger"
+                (click)="deleteTransaction('EXPENSE', txn.id)"
+                [disabled]="isSavingType('EXPENSE') || isDeletingType('EXPENSE')"
+              >
+                Delete
+              </button>
             </td>
           </tr>
         </tbody>
@@ -166,9 +173,17 @@
         <button
           type="button"
           (click)="saveAllTransactionCategories('EXPENSE')"
-          [disabled]="!hasPendingCategoryChanges('EXPENSE') || isSavingType('EXPENSE')"
+          [disabled]="!hasPendingCategoryChanges('EXPENSE') || isSavingType('EXPENSE') || isDeletingType('EXPENSE')"
         >
           {{ isSavingType('EXPENSE') ? 'Saving...' : 'Save All Changes' }}
+        </button>
+        <button
+          type="button"
+          class="danger"
+          (click)="deleteAllTransactions('EXPENSE')"
+          [disabled]="!hasTransactions('EXPENSE') || isSavingType('EXPENSE') || isDeletingType('EXPENSE')"
+        >
+          {{ isDeletingType('EXPENSE') ? 'Deleting...' : 'Delete All' }}
         </button>
       </div>
       <p class="table-total"><strong>Total:</strong> {{ expenseTotal | currency }}</p>
@@ -216,11 +231,18 @@
               <button
                 type="button"
                 (click)="saveTransactionCategory('INCOME', txn)"
-                [disabled]="!hasCategoryChanged('INCOME', txn) || isSavingTransaction('INCOME', txn.id) || isSavingType('INCOME')"
+                [disabled]="!hasCategoryChanged('INCOME', txn) || isSavingTransaction('INCOME', txn.id) || isSavingType('INCOME') || isDeletingType('INCOME')"
               >
                 {{ isSavingTransaction('INCOME', txn.id) ? 'Saving...' : 'Save' }}
               </button>
-              <button type="button" class="danger" (click)="deleteTransaction('INCOME', txn.id)">Delete</button>
+              <button
+                type="button"
+                class="danger"
+                (click)="deleteTransaction('INCOME', txn.id)"
+                [disabled]="isSavingType('INCOME') || isDeletingType('INCOME')"
+              >
+                Delete
+              </button>
             </td>
           </tr>
         </tbody>
@@ -229,9 +251,17 @@
         <button
           type="button"
           (click)="saveAllTransactionCategories('INCOME')"
-          [disabled]="!hasPendingCategoryChanges('INCOME') || isSavingType('INCOME')"
+          [disabled]="!hasPendingCategoryChanges('INCOME') || isSavingType('INCOME') || isDeletingType('INCOME')"
         >
           {{ isSavingType('INCOME') ? 'Saving...' : 'Save All Changes' }}
+        </button>
+        <button
+          type="button"
+          class="danger"
+          (click)="deleteAllTransactions('INCOME')"
+          [disabled]="!hasTransactions('INCOME') || isSavingType('INCOME') || isDeletingType('INCOME')"
+        >
+          {{ isDeletingType('INCOME') ? 'Deleting...' : 'Delete All' }}
         </button>
       </div>
       <p class="table-total"><strong>Total:</strong> {{ incomeTotal | currency }}</p>
