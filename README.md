@@ -89,15 +89,20 @@ Month route parameters use the format `yyyy-MM` (example: `2026-02`).
 - `POST /api/categories`
 - `PUT /api/categories/{id}`
 - `DELETE /api/categories/{id}`
+- `GET /api/accounts?includeInactive=false`
+- `POST /api/accounts`
+- `POST /api/accounts/{accountId}/statement-imports` (multipart `file` for `.csv`, `.ofx`, `.qfx`)
+  - If CSV has no header row and no saved mapping exists for that account, response status is `HEADER_MAPPING_REQUIRED`.
+  - Then resend with mapping fields: `dateColumnIndex`, `amountColumnIndex`, `descriptionColumnIndex`, optional `categoryColumnIndex`, optional `externalIdColumnIndex`, and `saveHeaderMapping=true` to persist per account.
 - `GET /api/months/{yearMonth}/settings`
 - `PUT /api/months/{yearMonth}/settings`
 - `GET /api/months/{yearMonth}/summary`
 - `GET /api/months/{yearMonth}/plans?type=EXPENSE|INCOME`
 - `PUT /api/months/{yearMonth}/plans?type=EXPENSE|INCOME`
-- `GET /api/months/{yearMonth}/transactions?type=EXPENSE|INCOME`
-- `POST /api/months/{yearMonth}/transactions?type=EXPENSE|INCOME`
-- `PUT /api/months/{yearMonth}/transactions/{id}?type=EXPENSE|INCOME`
-- `DELETE /api/months/{yearMonth}/transactions/{id}?type=EXPENSE|INCOME`
+- `GET /api/months/{yearMonth}/transactions?type=EXPENSE|INCOME&accountId={id}`
+- `POST /api/months/{yearMonth}/transactions?type=EXPENSE|INCOME&accountId={id}`
+- `PUT /api/months/{yearMonth}/transactions/{id}?type=EXPENSE|INCOME&accountId={id}`
+- `DELETE /api/months/{yearMonth}/transactions/{id}?type=EXPENSE|INCOME&accountId={id}`
 
 ## Example Requests
 
