@@ -9,6 +9,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 
 import java.time.Instant;
 
@@ -23,7 +24,8 @@ public class ApiExceptionHandler {
     @ExceptionHandler({
             BadRequestException.class,
             MethodArgumentNotValidException.class,
-            ConstraintViolationException.class
+            ConstraintViolationException.class,
+            MissingServletRequestPartException.class
     })
     public ResponseEntity<ErrorResponse> handleBadRequest(Exception ex, HttpServletRequest request) {
         String message = ex.getMessage();
@@ -63,4 +65,3 @@ public class ApiExceptionHandler {
     ) {
     }
 }
-

@@ -11,7 +11,8 @@ public record TransactionDto(
         BigDecimal amount,
         String description,
         Long categoryId,
-        String categoryName
+        String categoryName,
+        Long accountId,
+        String accountName
 ) {
 }
-

@@ -19,9 +19,13 @@ public class TransactionController {
     }
 
     @GetMapping
-    public List<TransactionDto> list(@PathVariable String yearMonth, @RequestParam TransactionType type) {
+    public List<TransactionDto> list(
+            @PathVariable String yearMonth,
+            @RequestParam TransactionType type,
+            @RequestParam(required = false) Long accountId
+    ) {
         LocalDate monthStart = YearMonthParser.parseToMonthStart(yearMonth);
-        return transactionService.list(monthStart, type);
+        return transactionService.list(monthStart, accountId, type);
     }
 
     @PostMapping
@@ -29,10 +33,11 @@ public class TransactionController {
     public TransactionDto create(
             @PathVariable String yearMonth,
             @RequestParam TransactionType type,
+            @RequestParam(required = false) Long accountId,
             @Valid @RequestBody TransactionRequest request
     ) {
         LocalDate monthStart = YearMonthParser.parseToMonthStart(yearMonth);
-        return transactionService.create(monthStart, type, request);
+        return transactionService.create(monthStart, accountId, type, request);
     }
 
     @PutMapping("/{id}")
@@ -40,10 +45,11 @@ public class TransactionController {
             @PathVariable String yearMonth,
             @PathVariable Long id,
             @RequestParam TransactionType type,
+            @RequestParam(required = false) Long accountId,
             @Valid @RequestBody TransactionRequest request
     ) {
         LocalDate monthStart = YearMonthParser.parseToMonthStart(yearMonth);
-        return transactionService.update(monthStart, type, id, request);
+        return transactionService.update(monthStart, accountId, type, id, request);
     }
 
     @DeleteMapping("/{id}")
@@ -51,10 +57,10 @@ public class TransactionController {
     public void delete(
             @PathVariable String yearMonth,
             @PathVariable Long id,
-            @RequestParam TransactionType type
+            @RequestParam TransactionType type,
+            @RequestParam(required = false) Long accountId
     ) {
         LocalDate monthStart = YearMonthParser.parseToMonthStart(yearMonth);
-        transactionService.delete(monthStart, type, id);
+        transactionService.delete(monthStart, accountId, type, id);
     }
 }
-

@@ -1,12 +1,16 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import {
+  AccountDto,
   CategoryDto,
   CategoryType,
+  CsvHeaderMappingInput,
+  CreateAccountRequest,
   CreateCategoryRequest,
   MonthSettingsDto,
   MonthSummaryDto,
   PlanItemDto,
+  StatementImportResponseDto,
   PlanItemRequest,
   TransactionDto,
   TransactionRequest,
@@ -30,6 +34,16 @@ export class ApiService {
 
   updateMonthSettings(month: string, startingBalance: number) {
     return this.http.put<MonthSettingsDto>(`${this.base}/months/${month}/settings`, { startingBalance });
+  }
+
+  listAccounts(includeInactive = false) {
+    return this.http.get<AccountDto[]>(`${this.base}/accounts`, {
+      params: new HttpParams().set('includeInactive', String(includeInactive))
+    });
+  }
+
+  createAccount(request: CreateAccountRequest) {
+    return this.http.post<AccountDto>(`${this.base}/accounts`, request);
   }
 
   listCategories(type?: CategoryType) {
@@ -61,22 +75,61 @@ export class ApiService {
     });
   }
 
-  listTransactions(month: string, type: TransactionType) {
-    return this.http.get<TransactionDto[]>(`${this.base}/months/${month}/transactions`, {
-      params: new HttpParams().set('type', type)
-    });
+  listTransactions(month: string, type: TransactionType, accountId?: number) {
+    let params = new HttpParams().set('type', type);
+    if (accountId != null) {
+      params = params.set('accountId', String(accountId));
+    }
+    return this.http.get<TransactionDto[]>(`${this.base}/months/${month}/transactions`, { params });
   }
 
-  createTransaction(month: string, type: TransactionType, request: TransactionRequest) {
+  createTransaction(month: string, type: TransactionType, request: TransactionRequest, accountId?: number) {
+    let params = new HttpParams().set('type', type);
+    if (accountId != null) {
+      params = params.set('accountId', String(accountId));
+    }
     return this.http.post<TransactionDto>(`${this.base}/months/${month}/transactions`, request, {
-      params: new HttpParams().set('type', type)
+      params
     });
   }
 
-  deleteTransaction(month: string, type: TransactionType, id: number) {
-    return this.http.delete<void>(`${this.base}/months/${month}/transactions/${id}`, {
-      params: new HttpParams().set('type', type)
+  updateTransaction(month: string, type: TransactionType, id: number, request: TransactionRequest, accountId?: number) {
+    let params = new HttpParams().set('type', type);
+    if (accountId != null) {
+      params = params.set('accountId', String(accountId));
+    }
+    return this.http.put<TransactionDto>(`${this.base}/months/${month}/transactions/${id}`, request, {
+      params
     });
+  }
+
+  deleteTransaction(month: string, type: TransactionType, id: number, accountId?: number) {
+    let params = new HttpParams().set('type', type);
+    if (accountId != null) {
+      params = params.set('accountId', String(accountId));
+    }
+    return this.http.delete<void>(`${this.base}/months/${month}/transactions/${id}`, {
+      params
+    });
+  }
+
+  importStatement(accountId: number, file: File, mapping?: CsvHeaderMappingInput) {
+    const formData = new FormData();
+    formData.append('file', file, file.name);
+    if (mapping) {
+      formData.append('dateColumnIndex', String(mapping.dateColumnIndex));
+      formData.append('amountColumnIndex', String(mapping.amountColumnIndex));
+      formData.append('descriptionColumnIndex', String(mapping.descriptionColumnIndex));
+      if (mapping.categoryColumnIndex != null) {
+        formData.append('categoryColumnIndex', String(mapping.categoryColumnIndex));
+      }
+      if (mapping.externalIdColumnIndex != null) {
+        formData.append('externalIdColumnIndex', String(mapping.externalIdColumnIndex));
+      }
+      if (mapping.saveHeaderMapping) {
+        formData.append('saveHeaderMapping', 'true');
+      }
+    }
+    return this.http.post<StatementImportResponseDto>(`${this.base}/accounts/${accountId}/statement-imports`, formData);
   }
 }
-

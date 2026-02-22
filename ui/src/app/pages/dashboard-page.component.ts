@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
 import { ApiService } from '../core/api.service';
 import { MonthSummaryDto } from '../core/api.models';
+import { MonthStateService } from '../core/month-state.service';
 
 @Component({
   selector: 'app-dashboard-page',
@@ -13,15 +14,25 @@ import { MonthSummaryDto } from '../core/api.models';
   styleUrl: './dashboard-page.component.scss'
 })
 export class DashboardPageComponent implements OnInit {
-  month = this.currentMonth();
+  month: string;
   loading = false;
   error = '';
   summary: MonthSummaryDto | null = null;
   startingBalance = 0;
 
-  constructor(private readonly api: ApiService) {}
+  constructor(
+    private readonly api: ApiService,
+    private readonly monthState: MonthStateService
+  ) {
+    this.month = this.monthState.month;
+  }
 
   ngOnInit(): void {
+    this.load();
+  }
+
+  onMonthChanged(): void {
+    this.monthState.setMonth(this.month);
     this.load();
   }
 
@@ -51,14 +62,8 @@ export class DashboardPageComponent implements OnInit {
     });
   }
 
-  private currentMonth(): string {
-    const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  }
-
   private toMessage(error: unknown): string {
     const payload = (error as { error?: { message?: string } }).error;
     return payload?.message ?? 'Request failed';
   }
 }
-

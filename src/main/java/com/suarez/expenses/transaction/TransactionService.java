@@ -1,5 +1,7 @@
 package com.suarez.expenses.transaction;
 
+import com.suarez.expenses.account.Account;
+import com.suarez.expenses.account.AccountService;
 import com.suarez.expenses.category.Category;
 import com.suarez.expenses.category.CategoryType;
 import com.suarez.expenses.category.CategoryService;
@@ -22,21 +24,34 @@ public class TransactionService {
     private final BudgetTransactionRepository budgetTransactionRepository;
     private final BudgetMonthService budgetMonthService;
     private final CategoryService categoryService;
+    private final AccountService accountService;
 
     public TransactionService(
             BudgetTransactionRepository budgetTransactionRepository,
             BudgetMonthService budgetMonthService,
-            CategoryService categoryService
+            CategoryService categoryService,
+            AccountService accountService
     ) {
         this.budgetTransactionRepository = budgetTransactionRepository;
         this.budgetMonthService = budgetMonthService;
         this.categoryService = categoryService;
+        this.accountService = accountService;
     }
 
     @Transactional(readOnly = true)
     public List<TransactionDto> list(LocalDate monthStart, TransactionType type) {
+        return list(monthStart, null, type);
+    }
+
+    @Transactional(readOnly = true)
+    public List<TransactionDto> list(LocalDate monthStart, Long accountId, TransactionType type) {
+        Account account = accountService.resolveAccount(accountId);
         return budgetMonthService.findByMonthStart(monthStart)
-                .map(month -> budgetTransactionRepository.findByBudgetMonthIdAndTransactionTypeOrderByTxnDateDescIdDesc(month.getId(), type)
+                .map(month -> budgetTransactionRepository.findByBudgetMonthIdAndAccountIdAndTransactionTypeOrderByTxnDateDescIdDesc(
+                                month.getId(),
+                                account.getId(),
+                                type
+                        )
                         .stream()
                         .map(this::toDto)
                         .toList())
@@ -45,11 +60,18 @@ public class TransactionService {
 
     @Transactional
     public TransactionDto create(LocalDate monthStart, TransactionType type, TransactionRequest request) {
+        return create(monthStart, null, type, request);
+    }
+
+    @Transactional
+    public TransactionDto create(LocalDate monthStart, Long accountId, TransactionType type, TransactionRequest request) {
         validateDateInMonth(request.date(), monthStart);
+        Account account = accountService.resolveAccount(accountId);
         BudgetMonth month = budgetMonthService.getOrCreate(monthStart);
         Category category = validateCategoryForType(type, request.categoryId());
         BudgetTransaction transaction = new BudgetTransaction(
                 month,
+                account,
                 type,
                 request.date(),
                 scale(request.amount()),
@@ -61,10 +83,21 @@ public class TransactionService {
 
     @Transactional
     public TransactionDto update(LocalDate monthStart, TransactionType type, Long id, TransactionRequest request) {
+        return update(monthStart, null, type, id, request);
+    }
+
+    @Transactional
+    public TransactionDto update(LocalDate monthStart, Long accountId, TransactionType type, Long id, TransactionRequest request) {
         validateDateInMonth(request.date(), monthStart);
+        Account account = accountService.resolveAccount(accountId);
         BudgetMonth month = budgetMonthService.findByMonthStart(monthStart)
                 .orElseThrow(() -> new NotFoundException("Month has no data: " + YearMonthParser.format(monthStart)));
-        BudgetTransaction transaction = budgetTransactionRepository.findByIdAndBudgetMonthIdAndTransactionType(id, month.getId(), type)
+        BudgetTransaction transaction = budgetTransactionRepository.findByIdAndBudgetMonthIdAndAccountIdAndTransactionType(
+                        id,
+                        month.getId(),
+                        account.getId(),
+                        type
+                )
                 .orElseThrow(() -> new NotFoundException("Transaction not found: " + id));
         Category category = validateCategoryForType(type, request.categoryId());
 
@@ -78,9 +111,20 @@ public class TransactionService {
 
     @Transactional
     public void delete(LocalDate monthStart, TransactionType type, Long id) {
+        delete(monthStart, null, type, id);
+    }
+
+    @Transactional
+    public void delete(LocalDate monthStart, Long accountId, TransactionType type, Long id) {
+        Account account = accountService.resolveAccount(accountId);
         BudgetMonth month = budgetMonthService.findByMonthStart(monthStart)
                 .orElseThrow(() -> new NotFoundException("Month has no data: " + YearMonthParser.format(monthStart)));
-        BudgetTransaction transaction = budgetTransactionRepository.findByIdAndBudgetMonthIdAndTransactionType(id, month.getId(), type)
+        BudgetTransaction transaction = budgetTransactionRepository.findByIdAndBudgetMonthIdAndAccountIdAndTransactionType(
+                        id,
+                        month.getId(),
+                        account.getId(),
+                        type
+                )
                 .orElseThrow(() -> new NotFoundException("Transaction not found: " + id));
         budgetTransactionRepository.delete(transaction);
     }
@@ -113,7 +157,9 @@ public class TransactionService {
                 transaction.getAmount(),
                 transaction.getDescription(),
                 transaction.getCategory().getId(),
-                transaction.getCategory().getName()
+                transaction.getCategory().getName(),
+                transaction.getAccount() == null ? null : transaction.getAccount().getId(),
+                transaction.getAccount() == null ? null : transaction.getAccount().getName()
         );
     }
 }
